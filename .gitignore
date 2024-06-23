@@ -4,4 +4,4 @@ __pycache__/
 *.py[cod]
 
 # ignore dataset (LFS rejection):
-src/data
+app/data
