@@ -1,10 +1,22 @@
 import os
+import json
 
 import pandas as pd
 
 
-df = pd.read_csv(os.path.join("..", "app", "data", "US_youtube_trending_data.csv"))
-df["trending_date"] = pd.to_datetime(
-    df["trending_date"], format="%y.%d.%m", utc=True
-).dt.tz_localize(None)
-df["publish_time"] = pd.to_datetime(df["publish_time"]).dt.tz_localize(None)
+data_path = os.path.join("..", "app", "data")
+
+# cleaning:
+df = pd.read_csv(os.path.join(data_path, "US_youtube_trending_data.csv"))
+
+df["category_name"] = df["category_id"].replace(
+    {
+        int(item["id"]): item["snippet"]["title"]
+        for item in json.load(
+            open(os.path.join(data_path, "US_category_id.json"), "r")
+        )["items"]
+    }
+)
+
+for column in ("published_at", "trending_date"):
+    df[column] = pd.to_datetime(df[column])
