@@ -89,6 +89,7 @@ def line_1():
         ax.plot(
             tuple(zip(*groups_pairs))[0],
             tuple(zip(*groups_pairs))[1],
+            linewidth=2,
         )
 
     plt.show()
@@ -112,6 +113,7 @@ def line_1():
             tuple(zip(*groups_pairs))[0],
             tuple(zip(*groups_pairs))[1],
             label=feature_data.display_name,
+            linewidth=2,
         )
 
     ax.legend()
@@ -136,6 +138,7 @@ def line_1():
             tuple(zip(*groups_pairs))[0],
             tuple(zip(*groups_pairs))[1],
             label=feature_data.display_name,
+            linewidth=2,
         )
 
     ax.legend()
@@ -168,6 +171,7 @@ def line_2():
         ax.plot(
             tuple(zip(*groups_pairs))[0],
             tuple(zip(*groups_pairs))[1],
+            linewidth=2,
         )
 
     plt.show()
@@ -191,6 +195,7 @@ def line_2():
             tuple(zip(*groups_pairs))[0],
             tuple(zip(*groups_pairs))[1],
             label=feature_data.display_name,
+            linewidth=2,
         )
 
     ax.legend()
@@ -215,6 +220,7 @@ def line_2():
             tuple(zip(*groups_pairs))[0],
             tuple(zip(*groups_pairs))[1],
             label=feature_data.display_name,
+            linewidth=2,
         )
 
     ax.legend()
@@ -248,6 +254,7 @@ def line_3():
         ax.plot(
             tuple(zip(*groups_pairs))[0],
             tuple(zip(*groups_pairs))[1],
+            linewidth=2,
         )
 
     plt.show()
@@ -274,6 +281,7 @@ def line_3():
             tuple(zip(*groups_pairs))[0],
             tuple(zip(*groups_pairs))[1],
             label=feature_data.display_name,
+            linewidth=2,
         )
 
     ax.legend()
@@ -301,6 +309,7 @@ def line_3():
             tuple(zip(*groups_pairs))[0],
             tuple(zip(*groups_pairs))[1],
             label=feature_data.display_name,
+            linewidth=2,
         )
 
     ax.legend()
@@ -407,7 +416,30 @@ def pair_1():
 
 
 def heatmap_1():
-    raise NotImplementedError
+    sns.heatmap(
+        df_youtube[[feature.id for feature in numeric_features]].corr(),
+        annot=True,
+        fmt=".2f",
+        cbar=True,
+    )
+    plt.title("Views, Likes, Dislikes, and Comment Count Heatmap")
+
+    plt.show()
+
+
+def heatmap_1():
+    df_trim = df_youtube[[feature.id for feature in numeric_features]]
+    df_trim = df_trim[df_trim["dislikes"] != 0]
+
+    sns.heatmap(
+        df_trim.corr(),
+        annot=True,
+        fmt=".2f",
+        cbar=True,
+    )
+    plt.title("Views, Likes, Dislikes, and Comment Count Heatmap")
+
+    plt.show()
 
 
 def hist_kde_with_feature(feature_name: str):
@@ -420,7 +452,7 @@ def hist_kde_1():
     # (1) hist with KDE for view_count
     ax = hist_kde_with_feature("view_count")
     ax.set_xlabel("Views")
-    
+
     plt.show()
 
 
@@ -457,6 +489,59 @@ def qq_1():
     raise NotImplementedError
 
 
+def kde_with_feature(feature_name: str):
+    return sns.kdeplot(
+        trim_feature_outliers(df_youtube, feature_name),
+        x=feature_name,
+        linewidth=2,
+        fill=True,
+        alpha=0.6,
+    )
+
+
+def kde_1():
+    # (1) KDE for view_count
+    ax = kde_with_feature("view_count")
+    ax.set_xlabel("Views")
+
+    plt.show()
+
+
+def kde_2():
+    # (2) KDE for likes
+    ax = kde_with_feature("likes")
+    ax.set_xlabel("Likes")
+
+    plt.show()
+
+
+def kde_3():
+    # (3) KDE for dislikes
+    df_trim = df_youtube[
+        (df_youtube["dislikes"] != 0)
+        & (np.abs(stats.zscore(df_youtube["dislikes"])) < 3)
+    ]
+
+    ax = sns.kdeplot(
+        df_trim,
+        x="dislikes",
+        linewidth=2,
+        fill=True,
+        alpha=0.6,
+    )
+    ax.set_xlabel("Dislikes")
+
+    plt.show()
+
+
+def kde_4():
+    # (4) KDE for comment_count
+    ax = kde_with_feature("comment_count")
+    ax.set_xlabel("Comments")
+
+    plt.show()
+
+
 if __name__ == "__main__":
     # line:
     # line_1()
@@ -486,12 +571,18 @@ if __name__ == "__main__":
     # heatmap:
     # heatmap_1()
 
-    # qq:
-    # qq_1()
-
     # histogram w/ kde:
     # hist_kde_1()
     # hist_kde_2()
     # hist_kde_3()
     # hist_kde_4()
+
+    # qq: TODO
+    # qq_1()
+
+    # KDE:
+    # kde_1()
+    # kde_2()
+    # kde_3()
+    # kde_4()
     ...
