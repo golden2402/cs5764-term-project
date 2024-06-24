@@ -87,7 +87,9 @@ def line_1():
 
         df_trim = df_youtube[df_youtube[feature] != 0]
         groups = df_trim.groupby([df_trim["trending_date"].dt.date])
-        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+        groups_pairs = list(
+            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        )
 
         ax.set_xlabel("Date")
         ax.set_ylabel(feature_data.display_name)
@@ -114,7 +116,9 @@ def line_1():
 
         df_trim = df_youtube[df_youtube[feature] != 0]
         groups = df_trim.groupby([df_trim["trending_date"].dt.date])
-        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+        groups_pairs = list(
+            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        )
 
         ax.plot(
             tuple(zip(*groups_pairs))[0],
@@ -139,7 +143,9 @@ def line_1():
 
         df_trim = df_youtube[df_youtube[feature] != 0]
         groups = df_trim.groupby([df_trim["trending_date"].dt.date])
-        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+        groups_pairs = list(
+            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        )
 
         ax.plot(
             tuple(zip(*groups_pairs))[0],
@@ -169,7 +175,9 @@ def line_2():
         df_trim = df_covid_mid[df_covid_mid[feature] != 0]
 
         groups = df_trim.groupby([df_trim["trending_date"].dt.date])
-        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+        groups_pairs = list(
+            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        )
 
         ax.set_xlabel("Date")
         ax.set_ylabel(feature_data.display_name)
@@ -196,7 +204,9 @@ def line_2():
 
         df_trim = df_covid_mid[df_covid_mid[feature] != 0]
         groups = df_trim.groupby([df_trim["trending_date"].dt.date])
-        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+        groups_pairs = list(
+            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        )
 
         ax.plot(
             tuple(zip(*groups_pairs))[0],
@@ -221,7 +231,9 @@ def line_2():
 
         df_trim = df_covid_mid[df_covid_mid[feature] != 0]
         groups = df_trim.groupby([df_trim["trending_date"].dt.date])
-        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+        groups_pairs = list(
+            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        )
 
         ax.plot(
             tuple(zip(*groups_pairs))[0],
@@ -246,7 +258,9 @@ def line_3():
         df_trim = df_covid_post[df_covid_post[feature] != 0]
 
         groups = df_trim.groupby([df_trim["trending_date"].dt.date])
-        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+        groups_pairs = list(
+            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        )
 
         # since dislikes were removed, the isolated date range may provide no
         # groups, which will cause an error when calling zip:
@@ -279,7 +293,9 @@ def line_3():
 
         df_trim = df_covid_post[df_covid_post[feature] != 0]
         groups = df_trim.groupby([df_trim["trending_date"].dt.date])
-        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+        groups_pairs = list(
+            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        )
 
         if len(groups_pairs) == 0:
             continue
@@ -307,7 +323,9 @@ def line_3():
 
         df_trim = df_covid_post[df_covid_post[feature] != 0]
         groups = df_trim.groupby([df_trim["trending_date"].dt.date])
-        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+        groups_pairs = list(
+            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        )
 
         if len(groups_pairs) == 0:
             continue
@@ -363,7 +381,9 @@ def pie_1():
         df_trim = df_youtube[df_youtube[feature] != 0]
 
         groups = df_trim.groupby("category_name")
-        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+        groups_pairs = list(
+            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        )
 
         groups_top_n = sorted(groups_pairs, key=lambda pair: pair[1])[:5]
 
@@ -699,6 +719,49 @@ def boxplot_3():
     plt.show()
 
 
+def area_with_features(feature_set: list[SubplotFeature]):
+    ax = plt.subplot()
+
+    ax.grid()
+    ax.set_xlabel("Dates")
+    ax.set_ylabel("Count")
+
+    for feature_data in feature_set:
+        feature = feature_data.id
+
+        df_trim = df_youtube[df_youtube[feature] != 0]
+        groups = df_trim.groupby([df_trim["trending_date"].dt.date])
+        groups_pairs = list(
+            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        )
+        # ax.yaxis.set_major_formatter(abbrev_num)
+
+        x = tuple(zip(*groups_pairs))[0]
+        y = tuple(zip(*groups_pairs))[1]
+
+        ax.plot(
+            x,
+            y,
+            label=feature_data.display_name,
+            linewidth=2,
+        )
+        ax.fill_between(x, y, alpha=0.6)
+
+    ax.legend()
+
+    return ax
+
+
+def area_1():
+    area_with_features([*numeric_features[:2], *numeric_features[3:]])
+    plt.show()
+
+
+def area_2():
+    area_with_features([numeric_features[1], numeric_features[3]])
+    plt.show()
+
+
 if __name__ == "__main__":
     # line:
     # line_1()
@@ -752,4 +815,8 @@ if __name__ == "__main__":
     # boxplot_1()
     # boxplot_2()
     # boxplot_3()
+
+    # area:
+    # area_1()
+    # area_2()
     ...
