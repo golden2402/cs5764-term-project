@@ -24,7 +24,7 @@ np.set_printoptions(precision=2)
 
 data_path = os.path.join("..", "app", "data")
 
-# cleaning:
+# data loading & cleaning:
 df_youtube = pd.read_csv(os.path.join(data_path, "US_youtube_trending_data.csv"))
 
 df_youtube["category_name"] = df_youtube["category_id"].replace(
@@ -38,6 +38,10 @@ df_youtube["category_name"] = df_youtube["category_id"].replace(
 
 for column in ("published_at", "trending_date"):
     df_youtube[column] = pd.to_datetime(df_youtube[column]).dt.tz_localize(None)
+
+
+def trim_feature_outliers(df: pd.DataFrame, feature_name: str):
+    return df[(np.abs(stats.zscore(df[feature_name])) < 3)]
 
 
 def abbrev_num(value, tick_number=None):
@@ -67,7 +71,6 @@ numeric_features_without_views = tuple(
 )
 
 
-# lines:
 def line_1():
     # (1a) full dataset:
     f, _ = plt.subplots(2, 2)
@@ -358,33 +361,34 @@ def pie_1():
 
 def dist_with_feature(feature_name: str):
     # outlier removal:
-    df_trim = df_youtube[(np.abs(stats.zscore(df_youtube[feature_name])) < 3)]
-
-    sns.histplot(df_trim, x=feature_name, bins=50)
+    sns.displot(trim_feature_outliers(df_youtube, feature_name), x=feature_name)
     plt.show()
 
 
 def dist_1():
     # (1) dist plot w/ outlier removal, plotting view_count:
-    # outlier removal:
     dist_with_feature("view_count")
 
 
 def dist_2():
     # (2) dist plot w/ outlier removal, plotting likes:
-    # outlier removal:
     dist_with_feature("likes")
 
 
 def dist_3():
     # (3) dist plot w/ outlier removal, plotting dislikes:
-    # outlier removal:
-    dist_with_feature("dislikes")
+    # modified impl., remove 0's (due to YouTube dislike removal):
+    df_trim = df_youtube[
+        (df_youtube["dislikes"] != 0)
+        & (np.abs(stats.zscore(df_youtube["dislikes"])) < 3)
+    ]
+
+    sns.displot(df_trim, x="dislikes")
+    plt.show()
 
 
 def dist_4():
     # (4) dist plot w/ outlier removal, plotting comment_count:
-    # outlier removal:
     dist_with_feature("comment_count")
 
 
@@ -406,6 +410,49 @@ def heatmap_1():
     raise NotImplementedError
 
 
+def hist_kde_with_feature(feature_name: str):
+    return sns.histplot(
+        trim_feature_outliers(df_youtube, feature_name), x=feature_name, kde=True
+    )
+
+
+def hist_kde_1():
+    # (1) hist with KDE for view_count
+    ax = hist_kde_with_feature("view_count")
+    ax.set_xlabel("Views")
+    
+    plt.show()
+
+
+def hist_kde_2():
+    # (2) hist with KDE for likes
+    ax = hist_kde_with_feature("likes")
+    ax.set_xlabel("Likes")
+
+    plt.show()
+
+
+def hist_kde_3():
+    # (3) hist with KDE for dislikes
+    df_trim = df_youtube[
+        (df_youtube["dislikes"] != 0)
+        & (np.abs(stats.zscore(df_youtube["dislikes"])) < 3)
+    ]
+
+    ax = sns.histplot(df_trim, x="dislikes", kde=True)
+    ax.set_xlabel("Dislikes")
+
+    plt.show()
+
+
+def hist_kde_4():
+    # (3) hist with KDE for comment_count
+    ax = hist_kde_with_feature("likes")
+    ax.set_xlabel("Likes")
+
+    plt.show()
+
+
 def qq_1():
     raise NotImplementedError
 
@@ -425,7 +472,7 @@ if __name__ == "__main__":
     # count_1()
 
     # pie:
-    pie_1()
+    # pie_1()
 
     # dist:
     # dist_1()
@@ -442,5 +489,9 @@ if __name__ == "__main__":
     # qq:
     # qq_1()
 
-    # kde
+    # histogram w/ kde:
+    # hist_kde_1()
+    # hist_kde_2()
+    # hist_kde_3()
+    # hist_kde_4()
     ...
