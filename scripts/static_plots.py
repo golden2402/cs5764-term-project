@@ -44,6 +44,18 @@ def trim_feature_outliers(df: pd.DataFrame, feature_name: str):
     return df[(np.abs(stats.zscore(df[feature_name])) < 3)]
 
 
+def trim_dislike_outliers():
+    # modified impl., remove 0's (due to YouTube dislike removal) AND check for
+    # outliers in the same mask:
+    return df_youtube[
+        (df_youtube["dislikes"] != 0)
+        & (np.abs(stats.zscore(df_youtube["dislikes"])) < 3)
+    ]
+
+
+df_dislike_trim = trim_dislike_outliers()
+
+
 def abbrev_num(value, tick_number=None):
     num_thousands = 0 if abs(value) < 1000 else floor(log10(abs(value)) / 3)
     value = round(value / 1000**num_thousands, 2)
@@ -386,13 +398,7 @@ def dist_2():
 
 def dist_3():
     # (3) dist plot w/ outlier removal, plotting dislikes:
-    # modified impl., remove 0's (due to YouTube dislike removal):
-    df_trim = df_youtube[
-        (df_youtube["dislikes"] != 0)
-        & (np.abs(stats.zscore(df_youtube["dislikes"])) < 3)
-    ]
-
-    sns.displot(df_trim, x="dislikes")
+    sns.displot(df_dislike_trim, x="dislikes")
     plt.show()
 
 
@@ -430,6 +436,8 @@ def heatmap_1():
 def heatmap_1():
     df_trim = df_youtube[[feature.id for feature in numeric_features]]
     df_trim = df_trim[df_trim["dislikes"] != 0]
+    # TODO -- figure out which one of these outlier operations to use:
+    # df_trim = trim_feature_outliers(df_trim, "dislikes")
 
     sns.heatmap(
         df_trim.corr(),
@@ -466,12 +474,7 @@ def hist_kde_2():
 
 def hist_kde_3():
     # (3) hist with KDE for dislikes
-    df_trim = df_youtube[
-        (df_youtube["dislikes"] != 0)
-        & (np.abs(stats.zscore(df_youtube["dislikes"])) < 3)
-    ]
-
-    ax = sns.histplot(df_trim, x="dislikes", kde=True)
+    ax = sns.histplot(df_dislike_trim, x="dislikes", kde=True)
     ax.set_xlabel("Dislikes")
 
     plt.show()
@@ -517,13 +520,8 @@ def kde_2():
 
 def kde_3():
     # (3) KDE for dislikes
-    df_trim = df_youtube[
-        (df_youtube["dislikes"] != 0)
-        & (np.abs(stats.zscore(df_youtube["dislikes"])) < 3)
-    ]
-
     ax = sns.kdeplot(
-        df_trim,
+        df_dislike_trim,
         x="dislikes",
         linewidth=2,
         fill=True,
@@ -538,6 +536,66 @@ def kde_4():
     # (4) KDE for comment_count
     ax = kde_with_feature("comment_count")
     ax.set_xlabel("Comments")
+
+    plt.show()
+
+
+def lm_1():
+    # (1) lmplot views vs. likes: check to see if likes have increased with
+    # respect to views
+    grid = sns.lmplot(
+        trim_feature_outliers(df_youtube, "view_count"),
+        x="view_count",
+        y="likes",
+        line_kws={"color": "#c44e52"},
+    )
+    ax = grid.ax
+
+    ax.set_title("lmplot: Views vs. Likes")
+    ax.set_xlabel("Views")
+    ax.set_ylabel("Likes")
+    # ax.xaxis.set_major_formatter(abbrev_num)
+    # ax.yaxis.set_major_formatter(abbrev_num)
+
+    plt.show()
+
+
+def lm_2():
+    # (2) lmplot likes vs. comments: check to see if comments increase with
+    # respect to likes
+    grid = sns.lmplot(
+        trim_feature_outliers(df_youtube, "likes"),
+        x="likes",
+        y="comment_count",
+        line_kws={"color": "#c44e52"},
+    )
+    ax = grid.ax
+
+    ax.set_title("lmplot: Comments vs. Likes")
+    ax.set_xlabel("Likes")
+    ax.set_ylabel("Comments")
+    # ax.xaxis.set_major_formatter(abbrev_num)
+    # ax.yaxis.set_major_formatter(abbrev_num)
+
+    plt.show()
+
+
+def lm_3():
+    # (3) lmplot dislikes vs. comments: check to see if comments increase with
+    # respect to dislikes
+    grid = sns.lmplot(
+        df_dislike_trim,
+        x="dislikes",
+        y="comment_count",
+        line_kws={"color": "#c44e52"},
+    )
+    ax = grid.ax
+
+    ax.set_title("lmplot: Comments vs. Likes")
+    ax.set_xlabel("Dislikes")
+    ax.set_ylabel("Comments")
+    # ax.xaxis.set_major_formatter(abbrev_num)
+    # ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -585,4 +643,9 @@ if __name__ == "__main__":
     # kde_2()
     # kde_3()
     # kde_4()
+
+    # lmplot:
+    # lm_1()
+    # lm_2()
+    # lm_3()
     ...
