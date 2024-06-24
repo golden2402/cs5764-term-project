@@ -762,6 +762,105 @@ def area_2():
     plt.show()
 
 
+def violin_1():
+    # (2) violin plot w/ trimmed views dataset
+    ax = sns.violinplot(
+        trim_feature_outliers(df_youtube, "view_count"),
+        x="view_count",
+        y="category_name",
+    )
+
+    ax.set_xlabel("Views")
+    ax.set_ylabel("Category")
+
+    plt.show()
+
+
+def violin_2():
+    # (2) violin plot w/ trimmed likes dataset
+    ax = sns.violinplot(
+        trim_feature_outliers(df_youtube, "likes"),
+        x="likes",
+        y="category_name",
+    )
+
+    ax.set_xlabel("Likes")
+    ax.set_ylabel("Category")
+
+    plt.show()
+
+
+def violin_3():
+    # (3) violin plot w/ dislikes (using pre-filtered set)
+    ax = sns.violinplot(
+        df_dislike_trim,
+        x="dislikes",
+        y="category_name",
+    )
+
+    ax.set_xlabel("Dislikes")
+    ax.set_ylabel("Category")
+
+    plt.show()
+
+
+def violin_4():
+    # (4) violin plot w/ trimmed comments dataset
+    ax = sns.violinplot(
+        trim_feature_outliers(df_youtube, "comment_count"),
+        x="comment_count",
+        y="category_name",
+    )
+
+    ax.set_xlabel("Comments")
+    ax.set_ylabel("Category")
+
+    plt.show()
+
+
+def joint_with_features(feature_x: str, feature_y: str):
+    df_filtered = df_youtube[[feature_x, feature_y, "category_name"]][
+        (np.abs(stats.zscore(df_youtube)) < 3).all(axis=1)
+    ]
+
+    return sns.jointplot(df_filtered, feature_x, feature_y, hue="category_name")
+
+
+def joint_1():
+    joint_with_features("likes", "comment_count")
+    plt.show()
+
+
+def rug_with_features(df: pd.DataFrame, feature_x: str, feature_y: str):
+    sns.scatterplot(df, x=feature_x, y=feature_y)
+    return sns.rugplot(df, x=feature_x, y=feature_y)
+
+
+def rug_1():
+    ax = rug_with_features(df_youtube, "likes", "comment_count")
+    
+    ax.set_xlabel("Likes")
+    ax.set_ylabel("Comments")
+
+    plt.show()
+
+def rug_2():
+    ax = rug_with_features(df_dislike_trim, "dislikes", "comment_count")
+    
+    ax.set_xlabel("Dislikes")
+    ax.set_ylabel("Comments")
+
+    plt.show()
+
+def rug_3():
+    ax = rug_with_features(df_dislike_trim, "dislikes", "view_count")
+
+    ax.set_xlabel("Dislikes")
+    ax.set_ylabel("Views")
+
+    plt.show()
+
+
 if __name__ == "__main__":
     # line:
     # line_1()
@@ -819,4 +918,18 @@ if __name__ == "__main__":
     # area:
     # area_1()
     # area_2()
+
+    # violin:
+    # violin_1()
+    # violin_2()
+    # violin_3()
+    # violin_4()
+
+    # joint: FIXME: too slow!
+    # joint_1()
+
+    # rug:
+    # rug_1()
+    # rug_2()
+    # rug_3()
     ...
