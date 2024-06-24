@@ -838,7 +838,7 @@ def joint_with_features(df: pd.DataFrame, feature_x: str, feature_y: str):
 def joint_1():
     grid = joint_with_features(df_youtube, "likes", "comment_count")
     grid.set_axis_labels(xlabel="Likes", ylabel="Comments")
-    
+
     plt.show()
 
 
@@ -964,6 +964,123 @@ def hexbin_4():
     plt.show()
 
 
+def strip_with_features(df: pd.DataFrame, feature_x: str, **kwargs):
+    groups = df.groupby("category_name")
+    groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature_x].sum()), groups))
+    groups_top_n = sorted(groups_pairs, key=lambda pair: pair[1])[:5]
+
+    df_top_n = df[
+        df["category_name"].isin(tuple(map(lambda pair: pair[0], groups_top_n)))
+    ]
+
+    q_lo_y = df_top_n[feature_x].quantile(0.1)
+    q_hi_y = df_top_n[feature_x].quantile(0.9)
+
+    df_trim = df_top_n[(df_top_n[feature_x] < q_hi_y) & (df_top_n[feature_x] > q_lo_y)]
+
+    return sns.stripplot(df_trim, x=feature_x, y="category_name", **kwargs)
+
+
+def strip_1():
+    ax = strip_with_features(
+        df_youtube,
+        "likes",
+        hue="category_name",
+    )
+
+    ax.set_xlabel("Likes")
+    ax.set_ylabel("Category")
+    # ax.yaxis.set_major_formatter(abbrev_num)
+
+    plt.show()
+
+
+def strip_2():
+    ax = strip_with_features(
+        df_youtube,
+        "view_count",
+        hue="category_name",
+    )
+
+    ax.set_xlabel("Views")
+    ax.set_ylabel("Category")
+    # ax.yaxis.set_major_formatter(abbrev_num)
+
+    plt.show()
+
+
+def strip_3():
+    ax = strip_with_features(
+        df_dislike_trim,
+        "dislikes",
+        hue="category_name",
+    )
+
+    ax.set_xlabel("Dislikes")
+    ax.set_ylabel("Category")
+    # ax.yaxis.set_major_formatter(abbrev_num)
+
+    plt.show()
+
+
+def swarm_with_features(df: pd.DataFrame, feature_x: str, **kwargs):
+    groups = df.groupby("category_name")
+    groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature_x].sum()), groups))
+    groups_top_n = sorted(groups_pairs, key=lambda pair: pair[1])[:5]
+
+    df_top_n = df[
+        df["category_name"].isin(tuple(map(lambda pair: pair[0], groups_top_n)))
+    ]
+
+    q_lo_y = df_top_n[feature_x].quantile(0.25)
+    q_hi_y = df_top_n[feature_x].quantile(0.75)
+
+    df_trim = df_top_n[(df_top_n[feature_x] < q_hi_y) & (df_top_n[feature_x] > q_lo_y)]
+
+    return sns.swarmplot(df_trim, x=feature_x, y="category_name", **kwargs)
+
+
+def swarm_1():
+    ax = swarm_with_features(
+        df_youtube,
+        "likes",
+        hue="category_name",
+    )
+
+    ax.set_xlabel("Likes")
+    ax.set_ylabel("Category")
+    # ax.yaxis.set_major_formatter(abbrev_num)
+
+    plt.show()
+
+def swarm_2():
+    ax = swarm_with_features(
+        df_youtube,
+        "view_count",
+        hue="category_name",
+    )
+
+    ax.set_xlabel("Views")
+    ax.set_ylabel("Category")
+    # ax.yaxis.set_major_formatter(abbrev_num)
+
+    plt.show()
+
+
+def swarm_3():
+    ax = swarm_with_features(
+        df_dislike_trim,
+        "dislikes",
+        hue="category_name",
+    )
+
+    ax.set_xlabel("Dislikes")
+    ax.set_ylabel("Category")
+    # ax.yaxis.set_major_formatter(abbrev_num)
+
+    plt.show()
+
+
 if __name__ == "__main__":
     # line:
     # line_1()
@@ -1040,7 +1157,8 @@ if __name__ == "__main__":
     # xyz_1()
 
     # cluster:
-    # NOTE: too much memory (so do not enable!), maybe sum rows by date?
+    # NOTE: too much memory (even with z-score and quantile filtering, so do not
+    # enable! unless you want to die!); maybe sum rows by date?
     # cluster_1()
 
     # hexbin:
@@ -1050,6 +1168,13 @@ if __name__ == "__main__":
     # hexbin_4()
 
     # strip:
+    # strip_1()
+    # strip_2()
+    # strip_3()
 
     # swarm:
+    # swarm_1()
+    # swarm_2()
+    # swarm_3()
+
     ...
