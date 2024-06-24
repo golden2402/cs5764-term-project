@@ -5,6 +5,7 @@ from typing import NamedTuple
 from math import floor, log10
 from datetime import date, datetime
 
+from scipy import stats
 import numpy as np
 import pandas as pd
 
@@ -12,6 +13,10 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
 import seaborn as sns
+
+sns.set_palette("pastel")
+sns.set_style("whitegrid")
+sns.set_theme()
 
 pd.set_option("display.float_format", "{:.2f}".format)
 np.set_printoptions(precision=2)
@@ -51,14 +56,14 @@ covid_min_date = date(2020, 8, 11)
 covid_max_date = date(2023, 5, 3)
 
 # before YouTube removed dislikes (and base numeric feature set):
-line_features = (
+numeric_features = (
     SubplotFeature("view_count", "Views"),
     SubplotFeature("likes", "Likes"),
     SubplotFeature("dislikes", "Dislikes"),
     SubplotFeature("comment_count", "Comments"),
 )
-line_features_without_views = tuple(
-    feature for feature in line_features if feature is not line_features[0]
+numeric_features_without_views = tuple(
+    feature for feature in numeric_features if feature is not numeric_features[0]
 )
 
 
@@ -67,7 +72,7 @@ def line_1():
     # (1a) full dataset:
     f, _ = plt.subplots(2, 2)
 
-    for ax, feature_data in zip(f.axes, line_features):
+    for ax, feature_data in zip(f.axes, numeric_features):
         feature = feature_data.id
 
         df_trim = df_youtube[df_youtube[feature] != 0]
@@ -76,7 +81,7 @@ def line_1():
 
         ax.set_xlabel("Date")
         ax.set_ylabel(feature_data.display_name)
-        ax.yaxis.set_major_formatter(abbrev_num)
+        # ax.yaxis.set_major_formatter(abbrev_num)
 
         ax.plot(
             tuple(zip(*groups_pairs))[0],
@@ -91,9 +96,9 @@ def line_1():
     ax.grid()
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    ax.yaxis.set_major_formatter(abbrev_num)
+    # ax.yaxis.set_major_formatter(abbrev_num)
 
-    for feature_data in line_features:
+    for feature_data in numeric_features:
         feature = feature_data.id
 
         df_trim = df_youtube[df_youtube[feature] != 0]
@@ -115,9 +120,9 @@ def line_1():
     ax.grid()
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    ax.yaxis.set_major_formatter(abbrev_num)
+    # ax.yaxis.set_major_formatter(abbrev_num)
 
-    for feature_data in line_features_without_views:
+    for feature_data in numeric_features_without_views:
         feature = feature_data.id
 
         df_trim = df_youtube[df_youtube[feature] != 0]
@@ -146,7 +151,7 @@ def line_2():
     # (2a) pre-COVID:
     f, _ = plt.subplots(2, 2)
 
-    for ax, feature_data in zip(f.axes, line_features):
+    for ax, feature_data in zip(f.axes, numeric_features):
         feature = feature_data.id
         df_trim = df_covid_mid[df_covid_mid[feature] != 0]
 
@@ -155,7 +160,7 @@ def line_2():
 
         ax.set_xlabel("Date")
         ax.set_ylabel(feature_data.display_name)
-        ax.yaxis.set_major_formatter(abbrev_num)
+        # ax.yaxis.set_major_formatter(abbrev_num)
 
         ax.plot(
             tuple(zip(*groups_pairs))[0],
@@ -170,9 +175,9 @@ def line_2():
     ax.grid()
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    ax.yaxis.set_major_formatter(abbrev_num)
+    # ax.yaxis.set_major_formatter(abbrev_num)
 
-    for feature_data in line_features:
+    for feature_data in numeric_features:
         feature = feature_data.id
 
         df_trim = df_covid_mid[df_covid_mid[feature] != 0]
@@ -194,9 +199,9 @@ def line_2():
     ax.grid()
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    ax.yaxis.set_major_formatter(abbrev_num)
+    # ax.yaxis.set_major_formatter(abbrev_num)
 
-    for feature_data in line_features_without_views:
+    for feature_data in numeric_features_without_views:
         feature = feature_data.id
 
         df_trim = df_covid_mid[df_covid_mid[feature] != 0]
@@ -220,7 +225,7 @@ def line_3():
     # (3a) post-COVID:
     f, _ = plt.subplots(2, 2)
 
-    for ax, feature_data in zip(f.axes, line_features):
+    for ax, feature_data in zip(f.axes, numeric_features):
         feature = feature_data.id
         df_trim = df_covid_post[df_covid_post[feature] != 0]
 
@@ -235,7 +240,7 @@ def line_3():
 
         ax.set_xlabel("Date")
         ax.set_ylabel(feature_data.display_name)
-        ax.yaxis.set_major_formatter(abbrev_num)
+        # ax.yaxis.set_major_formatter(abbrev_num)
 
         ax.plot(
             tuple(zip(*groups_pairs))[0],
@@ -250,9 +255,9 @@ def line_3():
     ax.grid()
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    ax.yaxis.set_major_formatter(abbrev_num)
+    # ax.yaxis.set_major_formatter(abbrev_num)
 
-    for feature_data in line_features:
+    for feature_data in numeric_features:
         feature = feature_data.id
 
         df_trim = df_covid_post[df_covid_post[feature] != 0]
@@ -277,9 +282,9 @@ def line_3():
     ax.grid()
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    ax.yaxis.set_major_formatter(abbrev_num)
+    # ax.yaxis.set_major_formatter(abbrev_num)
 
-    for feature_data in line_features_without_views:
+    for feature_data in numeric_features_without_views:
         feature = feature_data.id
 
         df_trim = df_covid_post[df_covid_post[feature] != 0]
@@ -304,14 +309,138 @@ def line_4():
     ...
 
 
+def bar_1():
+    raise NotImplementedError
+
+
+def count_1():
+    # (1) numeric feature subplots, grouped by category [name]:
+    groups = df_youtube[["category_name"]].groupby("category_name").size()
+
+    ax = plt.subplot()
+
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Video Count")
+    ax.tick_params(axis="x", labelrotation=20)
+
+    bar_container = ax.bar(tuple(groups.index), tuple(groups.values))
+    ax.bar_label(bar_container)
+
+    plt.show()
+
+
 def pie_1():
-    # pie:
-    pass
+    # (1) numeric feature subplots, grouped by category [name]:
+    f, _ = plt.subplots(2, 2)
+
+    for ax, feature_data in zip(f.axes, numeric_features):
+        feature = feature_data.id
+        df_trim = df_youtube[df_youtube[feature] != 0]
+
+        groups = df_trim.groupby("category_name")
+        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+
+        groups_top_n = sorted(groups_pairs, key=lambda pair: pair[1])[:5]
+
+        if len(groups_pairs) == 0:
+            ax.set_visible(False)
+            continue
+
+        ax.set_title(feature_data.display_name)
+        ax.pie(
+            tuple(zip(*groups_top_n))[1],
+            labels=tuple(zip(*groups_top_n))[0],
+            autopct="%.2f%%",
+        )
+
+    plt.show()
+
+
+def dist_with_feature(feature_name: str):
+    # outlier removal:
+    df_trim = df_youtube[(np.abs(stats.zscore(df_youtube[feature_name])) < 3)]
+
+    sns.histplot(df_trim, x=feature_name, bins=50)
+    plt.show()
+
+
+def dist_1():
+    # (1) dist plot w/ outlier removal, plotting view_count:
+    # outlier removal:
+    dist_with_feature("view_count")
+
+
+def dist_2():
+    # (2) dist plot w/ outlier removal, plotting likes:
+    # outlier removal:
+    dist_with_feature("likes")
+
+
+def dist_3():
+    # (3) dist plot w/ outlier removal, plotting dislikes:
+    # outlier removal:
+    dist_with_feature("dislikes")
+
+
+def dist_4():
+    # (4) dist plot w/ outlier removal, plotting comment_count:
+    # outlier removal:
+    dist_with_feature("comment_count")
+
+
+def pair_1():
+    sns.pairplot(
+        df_youtube.sample(10000),
+        vars=[
+            feature.id
+            for feature in numeric_features
+            if feature is not numeric_features[2]
+        ],
+        hue="category_name",
+        diag_kind="kde",
+    )
+    plt.show()
+
+
+def heatmap_1():
+    raise NotImplementedError
+
+
+def qq_1():
+    raise NotImplementedError
 
 
 if __name__ == "__main__":
-    line_1()
-    line_2()
-    line_3()
+    # line:
+    # line_1()
+    # line_2()
+    # line_3()
     # line_4()
+
+    # bar:
+    # bar_1() # grouped
+    # bar_2() # stacked
+
+    # count:
+    # count_1()
+
+    # pie:
     pie_1()
+
+    # dist:
+    # dist_1()
+    # dist_2()
+    # dist_3()
+    # dist_4()
+
+    # pair:
+    # pair_1()
+
+    # heatmap:
+    # heatmap_1()
+
+    # qq:
+    # qq_1()
+
+    # kde
+    ...
