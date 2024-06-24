@@ -818,16 +818,27 @@ def violin_4():
     plt.show()
 
 
-def joint_with_features(feature_x: str, feature_y: str):
-    df_filtered = df_youtube[[feature_x, feature_y, "category_name"]][
-        (np.abs(stats.zscore(df_youtube)) < 3).all(axis=1)
+def joint_with_features(df: pd.DataFrame, feature_x: str, feature_y: str):
+    q_lo_x = df[feature_x].quantile(0.1)
+    q_hi_x = df[feature_x].quantile(0.9)
+
+    q_lo_y = df[feature_y].quantile(0.1)
+    q_hi_y = df[feature_y].quantile(0.9)
+
+    df_trim = df[
+        (df[feature_x] < q_hi_x)
+        & (df[feature_x] > q_lo_x)
+        & (df[feature_y] < q_hi_y)
+        & (df[feature_y] > q_lo_y)
     ]
 
-    return sns.jointplot(df_filtered, feature_x, feature_y, hue="category_name")
+    return sns.jointplot(df_trim, x=feature_x, y=feature_y, hue="category_name")
 
 
 def joint_1():
-    joint_with_features("likes", "comment_count")
+    grid = joint_with_features(df_youtube, "likes", "comment_count")
+    grid.set_axis_labels(xlabel="Likes", ylabel="Comments")
+    
     plt.show()
 
 
@@ -838,22 +849,114 @@ def rug_with_features(df: pd.DataFrame, feature_x: str, feature_y: str):
 
 def rug_1():
     ax = rug_with_features(df_youtube, "likes", "comment_count")
-    
+
     ax.set_xlabel("Likes")
     ax.set_ylabel("Comments")
 
     plt.show()
 
+
 def rug_2():
     ax = rug_with_features(df_dislike_trim, "dislikes", "comment_count")
-    
+
     ax.set_xlabel("Dislikes")
     ax.set_ylabel("Comments")
 
     plt.show()
 
+
 def rug_3():
     ax = rug_with_features(df_dislike_trim, "dislikes", "view_count")
+
+    ax.set_xlabel("Dislikes")
+    ax.set_ylabel("Views")
+
+    plt.show()
+
+
+def xyz_1():
+    raise NotImplementedError
+
+
+# NOTE: too slow--dataset is far too large, even when downsizing
+def cluster_1():
+    q_lo_views = df_youtube["view_count"].quantile(0.1)
+    q_hi_views = df_youtube["view_count"].quantile(0.9)
+    q_lo_likes = df_youtube["likes"].quantile(0.1)
+    q_hi_likes = df_youtube["likes"].quantile(0.9)
+    q_lo_dislikes = df_youtube["dislikes"].quantile(0.1)
+    q_hi_dislikes = df_youtube["dislikes"].quantile(0.9)
+    q_lo_comments = df_youtube["comment_count"].quantile(0.1)
+    q_hi_comments = df_youtube["comment_count"].quantile(0.9)
+
+    df_trim = df_youtube[[feature.id for feature in numeric_features]][
+        (df_youtube["view_count"] < q_hi_views)
+        & (df_youtube["view_count"] > q_lo_views)
+        & (df_youtube["likes"] < q_hi_likes)
+        & (df_youtube["likes"] > q_lo_likes)
+        & (df_youtube["dislikes"] < q_hi_dislikes)
+        & (df_youtube["dislikes"] > q_lo_dislikes)
+        & (df_youtube["comment_count"] < q_hi_comments)
+        & (df_youtube["comment_count"] > q_lo_comments)
+    ]
+
+    sns.clustermap(df_trim)
+    plt.show()
+
+
+def hexbin_with_features(df: pd.DataFrame, feature_x: str, feature_y: str):
+    q_lo_x = df[feature_x].quantile(0.1)
+    q_hi_x = df[feature_x].quantile(0.9)
+
+    q_lo_y = df[feature_y].quantile(0.1)
+    q_hi_y = df[feature_y].quantile(0.9)
+
+    df_trim = df[
+        (df[feature_x] < q_hi_x)
+        & (df[feature_x] > q_lo_x)
+        & (df[feature_y] < q_hi_y)
+        & (df[feature_y] > q_lo_y)
+    ]
+
+    ax = plt.subplot()
+    ax.hexbin(
+        df_trim[feature_x],
+        df_trim[feature_y],
+        gridsize=100,
+    )
+
+    return ax
+
+
+def hexbin_1():
+    ax = hexbin_with_features(df_youtube, "likes", "comment_count")
+
+    ax.set_xlabel("Likes")
+    ax.set_ylabel("Comments")
+
+    plt.show()
+
+
+def hexbin_2():
+    ax = hexbin_with_features(df_youtube, "likes", "view_count")
+
+    ax.set_xlabel("Likes")
+    ax.set_ylabel("Views")
+
+    plt.show()
+
+
+def hexbin_3():
+    ax = hexbin_with_features(df_dislike_trim, "dislikes", "comment_count")
+
+    ax.set_xlabel("Dislikes")
+    ax.set_ylabel("Comments")
+
+    plt.show()
+
+
+def hexbin_4():
+    ax = hexbin_with_features(df_dislike_trim, "dislikes", "view_count")
 
     ax.set_xlabel("Dislikes")
     ax.set_ylabel("Views")
@@ -925,11 +1028,28 @@ if __name__ == "__main__":
     # violin_3()
     # violin_4()
 
-    # joint: FIXME: too slow!
+    # joint:
     # joint_1()
 
     # rug:
     # rug_1()
     # rug_2()
     # rug_3()
+
+    # 3D: TODO
+    # xyz_1()
+
+    # cluster:
+    # NOTE: too much memory (so do not enable!), maybe sum rows by date?
+    # cluster_1()
+
+    # hexbin:
+    # hexbin_1()
+    # hexbin_2()
+    # hexbin_3()
+    # hexbin_4()
+
+    # strip:
+
+    # swarm:
     ...
