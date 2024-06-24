@@ -14,8 +14,8 @@ from matplotlib.axes import Axes
 
 import seaborn as sns
 
-sns.set_palette("pastel")
-sns.set_style("whitegrid")
+sns.set_style("white")
+sns.set_color_codes("pastel")
 sns.set_theme()
 
 pd.set_option("display.float_format", "{:.2f}".format)
@@ -44,16 +44,11 @@ def trim_feature_outliers(df: pd.DataFrame, feature_name: str):
     return df[(np.abs(stats.zscore(df[feature_name])) < 3)]
 
 
-def trim_dislike_outliers():
-    # modified impl., remove 0's (due to YouTube dislike removal) AND check for
-    # outliers in the same mask:
-    return df_youtube[
-        (df_youtube["dislikes"] != 0)
-        & (np.abs(stats.zscore(df_youtube["dislikes"])) < 3)
-    ]
-
-
-df_dislike_trim = trim_dislike_outliers()
+# modified impl., remove 0's (due to YouTube dislike removal) AND check for
+# outliers in the same mask:
+df_dislike_trim = df_youtube[
+    (df_youtube["dislikes"] != 0) & (np.abs(stats.zscore(df_youtube["dislikes"])) < 3)
+]
 
 
 def abbrev_num(value, tick_number=None):
@@ -341,15 +336,21 @@ def count_1():
     # (1) numeric feature subplots, grouped by category [name]:
     groups = df_youtube[["category_name"]].groupby("category_name").size()
 
-    ax = plt.subplot()
+    # ax = plt.subplot()
 
-    ax.set_xlabel("Category")
-    ax.set_ylabel("Video Count")
-    ax.tick_params(axis="x", labelrotation=20)
+    # ax.set_xlabel("Category")
+    # ax.set_ylabel("Video Count")
+    # ax.tick_params(axis="x", labelrotation=90)
 
-    bar_container = ax.bar(tuple(groups.index), tuple(groups.values))
-    ax.bar_label(bar_container)
+    # bar_container = (tuple(groups.index), tuple(groups.values))
+    # ax.bar_label(bar_container)
 
+    ax = sns.barplot(x=tuple(groups.index), y=tuple(groups.values))
+    ax.bar_label(ax.containers[0], fontsize=10)
+
+    ax.tick_params(axis="x", labelrotation=90)
+
+    plt.tight_layout()
     plt.show()
 
 
@@ -547,7 +548,7 @@ def lm_1():
         trim_feature_outliers(df_youtube, "view_count"),
         x="view_count",
         y="likes",
-        line_kws={"color": "#c44e52"},
+        line_kws={"color": "r"},
     )
     ax = grid.ax
 
@@ -567,7 +568,7 @@ def lm_2():
         trim_feature_outliers(df_youtube, "likes"),
         x="likes",
         y="comment_count",
-        line_kws={"color": "#c44e52"},
+        line_kws={"color": "r"},
     )
     ax = grid.ax
 
@@ -587,7 +588,7 @@ def lm_3():
         df_dislike_trim,
         x="dislikes",
         y="comment_count",
-        line_kws={"color": "#c44e52"},
+        line_kws={"color": "r"},
     )
     ax = grid.ax
 
@@ -600,6 +601,104 @@ def lm_3():
     plt.show()
 
 
+def boxplot_1():
+    # (1) covers multiple fields: views, likes, dislikes, and comments; creates
+    # and displays each plot individually
+
+    # NOTE: HARDCODED! if you change numeric_features, change the second tuple!:
+    feature_data_pairs = zip(
+        numeric_features,
+        (
+            trim_feature_outliers(df_youtube, "view_count"),
+            trim_feature_outliers(df_youtube, "likes"),
+            df_dislike_trim,
+            trim_feature_outliers(df_youtube, "comment_count"),
+        ),
+    )
+
+    for feature_data, df in feature_data_pairs:
+        feature = feature_data.id
+
+        ax = plt.subplot()
+        sns.boxplot(
+            df,
+            x=feature,
+            y="category_name",
+            ax=ax,
+        )
+
+        ax.set_xlabel(feature_data.display_name)
+        ax.set_ylabel("Category")
+
+        plt.show()
+
+
+def boxplot_2():
+    # (2) story: show dislikes next to views
+    f, _ = plt.subplots(1, 2)
+
+    # NOTE: HARDCODED! if you change numeric_features, change both tuples!:
+    feature_data_pairs = zip(
+        (numeric_features[2], numeric_features[0]),
+        (
+            df_dislike_trim,
+            trim_feature_outliers(df_youtube, "view_count"),
+        ),
+    )
+
+    for ax, (feature_data, df) in zip(f.axes, feature_data_pairs):
+        feature = feature_data.id
+
+        sns.boxplot(
+            df,
+            x=feature,
+            y="category_name",
+            ax=ax,
+        )
+
+        ax.set_xlabel(feature_data.display_name)
+        ax.set_ylabel("Category")
+
+    for ax in f.axes[1::2]:
+        ax.set_ylabel("")
+        ax.set_yticklabels([""] * len(ax.get_yticklabels()))
+
+    plt.show()
+
+
+def boxplot_3():
+    # (2) story: show dislikes next to comments
+    f, _ = plt.subplots(1, 2)
+
+    # NOTE: HARDCODED! if you change numeric_features, change both tuples!:
+    feature_data_pairs = zip(
+        (numeric_features[2], numeric_features[3]),
+        (
+            df_dislike_trim,
+            trim_feature_outliers(df_youtube, "comment_count"),
+        ),
+    )
+
+    for ax, (feature_data, df) in zip(f.axes, feature_data_pairs):
+        feature = feature_data.id
+
+        sns.boxplot(
+            df,
+            x=feature,
+            y="category_name",
+            ax=ax,
+        )
+
+        ax.set_xlabel(feature_data.display_name)
+        ax.set_ylabel("Category")
+
+    for ax in f.axes[1::2]:
+        ax.set_ylabel("")
+        ax.set_yticklabels([""] * len(ax.get_yticklabels()))
+
+    plt.show()
+
+
 if __name__ == "__main__":
     # line:
     # line_1()
@@ -607,7 +706,7 @@ if __name__ == "__main__":
     # line_3()
     # line_4()
 
-    # bar:
+    # bar: TODO
     # bar_1() # grouped
     # bar_2() # stacked
 
@@ -648,4 +747,9 @@ if __name__ == "__main__":
     # lm_1()
     # lm_2()
     # lm_3()
+
+    # boxplot:
+    # boxplot_1()
+    # boxplot_2()
+    # boxplot_3()
     ...
