@@ -3,6 +3,7 @@ import json
 
 from math import floor, log10
 from typing import NamedTuple
+from datetime import date
 
 import pandas as pd
 
@@ -11,7 +12,7 @@ from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
 from dash import Dash
-from dash import dcc, html, callback, Input, Output
+from dash import dcc, html, callback, Input, Output, State
 
 
 data_path = os.path.join("..", "app", "data")
@@ -32,8 +33,34 @@ for column in ("published_at", "trending_date"):
     df_youtube[column] = pd.to_datetime(df_youtube[column]).dt.tz_localize(None)
 
 
-# special trim for dislikes--after YouTube's removal of dislikes
+# special trims:
+# removal of all fields without dislikes--as per YouTube's removal of dislikes:
 df_youtube_dislikes = df_youtube[df_youtube["dislikes"] != 0]
+
+# COVID timeline:
+COVID_MIN_DATE = date(2020, 3, 11)
+COVID_MAX_DATE = date(2023, 5, 23)
+
+df_youtube_covid_pre = df_youtube[
+    (df_youtube["trending_date"].dt.date < COVID_MAX_DATE)
+    & (df_youtube["trending_date"].dt.date > COVID_MIN_DATE)
+]
+
+df_youtube_covid_post = df_youtube[
+    (df_youtube["trending_date"].dt.date >= COVID_MAX_DATE)
+]
+
+DOWNLOAD_MAP = {
+    "full": df_youtube,
+    "covid_pre": df_youtube_covid_pre,
+    "covid_post": df_youtube_covid_post,
+}
+
+DOWNLOAD_MAP_LABELS = {
+    "full": "Full Dataset",
+    "covid_pre": "Pre-COVID (03/11/2020-05/23/2023)",
+    "covid_post": "Post-COVID (05/23/2023-present)",
+}
 
 
 def get_top_n_pairs(df: pd.DataFrame, feature: str):
@@ -103,7 +130,7 @@ def update_tab(value: str | None):
             dcc.Loading((html.Div(id="t2-graph-container")), type="default"),
             html.Section(
                 (
-                    html.H4("Feature Selection:"),
+                    html.H4("Feature Selection:", className="label"),
                     dcc.Dropdown(
                         id="t2-feature-dropdown",
                         options=NUMERIC_FEATURES,
@@ -120,6 +147,8 @@ def update_tab(value: str | None):
                         max=15,
                         step=1,
                         value=[1, 15],
+                        marks=None,
+                        tooltip={"placement": "bottom", "always_visible": True},
                     ),
                 )
             ),
@@ -130,7 +159,7 @@ def update_tab(value: str | None):
             dcc.Loading((html.Div(id="t3-graph-container")), type="default"),
             html.Section(
                 (
-                    html.H4("Feature Selection:"),
+                    html.H4("Feature Selection:", className="label"),
                     dcc.Dropdown(
                         id="t3-feature-dropdown",
                         options=NUMERIC_FEATURES,
@@ -147,11 +176,56 @@ def update_tab(value: str | None):
                         max=15,
                         step=1,
                         value=[1, 15],
+                        marks=None,
+                        tooltip={"placement": "bottom", "always_visible": True},
                     ),
                 )
             ),
         )
-    # TODO: data section
+    elif value == TABS[3].value:
+        # may need to shift for extra tabs?
+        return (
+            html.Section((html.H2("Downloads"), html.P(""))),
+            html.Section(
+                (
+                    html.H3("Cleaning Parameters", className="label"),
+                    html.Div(
+                        (
+                            html.Section(
+                                (
+                                    html.H4("Dislike Filtering", className="label"),
+                                    dcc.Checklist(
+                                        id="t4-download-checklist",
+                                        options={
+                                            "remove_dislikes": "Rows with Dislikes Only"
+                                        },
+                                    ),
+                                )
+                            ),
+                            html.Section(
+                                (
+                                    html.H4("COVID Trimming", className="label"),
+                                    dcc.RadioItems(
+                                        id="t4-download-radio",
+                                        options=DOWNLOAD_MAP_LABELS,
+                                        value=next(iter(DOWNLOAD_MAP_LABELS)),
+                                    ),
+                                )
+                            ),
+                        ),
+                        className="download-parameters",
+                    ),
+                    html.Section(
+                        (
+                            html.H3("Finalize", className="label"),
+                            html.Button("Clean & Download", id="t4-download-button"),
+                        )
+                    ),
+                ),
+            ),
+            dcc.Store(id="t4-download-store"),
+            dcc.Download(id="t4-download-output"),
+        )
 
     return None
 
@@ -203,7 +277,7 @@ def update_t2_bar(feature: str | None, range_min_max: list[int] | None):
     return dcc.Graph(figure=figure), 1, len(groups)
 
 
-# tab 2: Categories (Bar)
+# tab 3: Categories (Pie)
 @callback(
     (
         Output("t3-graph-container", "children"),
@@ -234,10 +308,10 @@ def update_t3_bar(feature: str | None, range_min_max: list[int] | None):
             labels=groups_zip[0],
             values=groups_zip[1],
             customdata=tuple(map(abbrev_num, groups_zip[1])),
-            hovertemplate="<b>%{x}</b>"
-            + "<br/>%{y:,} "
-            + "<br/>%{percent}"
+            hovertemplate="<b>%{label}</b>"
+            + "<br>%{value:,} "
             + feature_label
+            + "<br>%{percent}"
             + "<extra></extra>",
             hole=0.3,
         )
@@ -247,6 +321,35 @@ def update_t3_bar(feature: str | None, range_min_max: list[int] | None):
     )
 
     return dcc.Graph(figure=figure), 1, len(groups)
+
+
+@callback(
+    Output("t4-download-store", "data"),
+    (Input("t4-download-checklist", "value"), Input("t4-download-radio", "value")),
+)
+def t4_set_params(value_checklist: list, value_radio: list):
+    print(value_checklist, value_radio)
+
+    return {"options": value_checklist, "data_range": value_radio}
+
+
+# tab 4: cleaning & download
+@callback(
+    Output("t4-download-output", "data"),
+    Input("t4-download-button", "n_clicks"),
+    State("t4-download-store", "data"),
+    prevent_initial_call=True,
+)
+def t4_download(_: int, data: dict):
+    options: list[str] = data["options"] or []
+    df: pd.DataFrame = DOWNLOAD_MAP.get(
+        data["data_range"], next(iter(DOWNLOAD_MAP.values()))
+    )
+
+    if "remove_dislikes" in options:
+        df = df[df["dislikes"] != 0]
+
+    return dcc.send_data_frame(df.to_csv, "download.csv")
 
 
 if __name__ == "__main__":

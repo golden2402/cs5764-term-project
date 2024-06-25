@@ -1,3 +1,11 @@
 #tabs .tab--selected {
   border-top: 2px solid #d62728;
 }
+
+.label {
+  margin-bottom: 0.2em;
+}
+
+.download-parameters {
+  margin-left: 1em;
+}
