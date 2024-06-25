@@ -161,7 +161,7 @@ def update_t2_bar(feature: str | None, range_min_max: list[int] | None):
         )
     )
     figure.update_layout(
-        title=f"Top N Categories: {feature_label}",
+        title=f"Categories: {feature_label} ({n_min} through {n_max})",
         xaxis_title="Category",
         yaxis_title=feature_label,
     )
