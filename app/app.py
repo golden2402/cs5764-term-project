@@ -119,7 +119,26 @@ def update_tab(value: str | None):
             ),
         )
     elif value == TABS[2].value:
-        return (html.H2("Categories (Pie)"),)
+        return (
+            html.Section((html.H2("Categories (Pie)"), html.P(""))),
+            dcc.Loading((html.Div(id="t3-graph-container")), type="default"),
+            html.Section(
+                (
+                    dcc.Dropdown(
+                        id="t3-feature-dropdown",
+                        options=NUMERIC_FEATURES,
+                        value=next(iter(NUMERIC_FEATURES)),
+                    ),
+                    dcc.RangeSlider(
+                        id="t3-top-slider",
+                        min=1,
+                        max=15,
+                        step=1,
+                        value=[1, 15],
+                    ),
+                )
+            ),
+        )
     # TODO: data section
 
     return None
@@ -142,7 +161,9 @@ def update_t2_bar(feature: str | None, range_min_max: list[int] | None):
     n_min, n_max = range_min_max
 
     groups = NUMERIC_TOP_PAIRS[feature]
-    groups_top_n = groups[n_min - 1 : min(len(groups), n_max)]
+    groups_top_n = groups[
+        (len(groups) + 1) - min(len(groups), n_max) - 1 : len(groups) - n_min + 1
+    ]
 
     groups_zip = tuple(zip(*groups_top_n))
 
@@ -162,8 +183,49 @@ def update_t2_bar(feature: str | None, range_min_max: list[int] | None):
     )
     figure.update_layout(
         title=f"Categories: {feature_label} ({n_min} through {n_max})",
+        xaxis_autorange="reversed",
         xaxis_title="Category",
         yaxis_title=feature_label,
+    )
+
+    return dcc.Graph(figure=figure), 1, len(groups)
+
+
+# tab 2: Categories (Bar)
+@callback(
+    (
+        Output("t3-graph-container", "children"),
+        Output("t3-top-slider", "min"),
+        Output("t3-top-slider", "max"),
+    ),
+    (Input("t3-feature-dropdown", "value"), Input("t3-top-slider", "value")),
+)
+def update_t3_bar(feature: str | None, range_min_max: list[int] | None):
+    if feature is None:
+        return html.P("Something went wrong--try picking a feature!")
+
+    # data:
+    n_min, n_max = range_min_max
+
+    groups = NUMERIC_TOP_PAIRS[feature]
+    groups_top_n = groups[
+        (len(groups) + 1) - min(len(groups), n_max) - 1 : len(groups) - n_min + 1
+    ]
+
+    groups_zip = tuple(zip(*groups_top_n))
+
+    # figure:
+    feature_label = NUMERIC_FEATURES[feature]
+
+    figure = go.Figure(
+        go.Pie(
+            labels=groups_zip[0],
+            values=groups_zip[1],
+            hole=0.3,
+        )
+    )
+    figure.update_layout(
+        title=f"Categories: {feature_label} ({n_min} through {n_max})",
     )
 
     return dcc.Graph(figure=figure), 1, len(groups)
