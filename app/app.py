@@ -103,11 +103,17 @@ def update_tab(value: str | None):
             dcc.Loading((html.Div(id="t2-graph-container")), type="default"),
             html.Section(
                 (
+                    html.H4("Feature Selection:"),
                     dcc.Dropdown(
                         id="t2-feature-dropdown",
                         options=NUMERIC_FEATURES,
                         value=next(iter(NUMERIC_FEATURES)),
                     ),
+                )
+            ),
+            html.Section(
+                (
+                    html.H4("Top Category Range:"),
                     dcc.RangeSlider(
                         id="t2-top-slider",
                         min=1,
@@ -124,11 +130,17 @@ def update_tab(value: str | None):
             dcc.Loading((html.Div(id="t3-graph-container")), type="default"),
             html.Section(
                 (
+                    html.H4("Feature Selection:"),
                     dcc.Dropdown(
                         id="t3-feature-dropdown",
                         options=NUMERIC_FEATURES,
                         value=next(iter(NUMERIC_FEATURES)),
                     ),
+                )
+            ),
+            html.Section(
+                (
+                    html.H4("Top Category Range:"),
                     dcc.RangeSlider(
                         id="t3-top-slider",
                         min=1,
@@ -221,6 +233,12 @@ def update_t3_bar(feature: str | None, range_min_max: list[int] | None):
         go.Pie(
             labels=groups_zip[0],
             values=groups_zip[1],
+            customdata=tuple(map(abbrev_num, groups_zip[1])),
+            hovertemplate="<b>%{x}</b>"
+            + "<br/>%{y:,} "
+            + "<br/>%{percent}"
+            + feature_label
+            + "<extra></extra>",
             hole=0.3,
         )
     )
