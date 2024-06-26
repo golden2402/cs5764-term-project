@@ -5,12 +5,14 @@ from typing import NamedTuple
 from math import floor, log10
 from datetime import date, datetime
 
+from statsmodels.graphics.gofplots import qqplot
 from scipy import stats
 import numpy as np
 import pandas as pd
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib import rc
 
 import seaborn as sns
 
@@ -20,6 +22,9 @@ sns.set_theme()
 
 pd.set_option("display.float_format", "{:.2f}".format)
 np.set_printoptions(precision=2)
+
+rc("font", family="serif")
+rc("axes", titlesize=24, titlecolor="b", labelsize=20, labelcolor="darkred")
 
 
 data_path = os.path.join("..", "app", "data")
@@ -93,7 +98,7 @@ def line_1():
 
         ax.set_xlabel("Date")
         ax.set_ylabel(feature_data.display_name)
-        # ax.yaxis.set_major_formatter(abbrev_num)
+        ax.yaxis.set_major_formatter(abbrev_num)
 
         ax.plot(
             tuple(zip(*groups_pairs))[0],
@@ -107,9 +112,10 @@ def line_1():
     ax = plt.subplot()
 
     ax.grid()
+    ax.set_title("Full Dataset (Altogether)")
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     for feature_data in numeric_features:
         feature = feature_data.id
@@ -134,9 +140,10 @@ def line_1():
     ax = plt.subplot()
 
     ax.grid()
+    ax.set_title("Dataset, no Views (Altogether)")
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     for feature_data in numeric_features_without_views:
         feature = feature_data.id
@@ -181,7 +188,7 @@ def line_2():
 
         ax.set_xlabel("Date")
         ax.set_ylabel(feature_data.display_name)
-        # ax.yaxis.set_major_formatter(abbrev_num)
+        ax.yaxis.set_major_formatter(abbrev_num)
 
         ax.plot(
             tuple(zip(*groups_pairs))[0],
@@ -195,9 +202,10 @@ def line_2():
     ax = plt.subplot()
 
     ax.grid()
+    ax.set_title("Mid-COVID (Altogether)")
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     for feature_data in numeric_features:
         feature = feature_data.id
@@ -222,9 +230,10 @@ def line_2():
     ax = plt.subplot()
 
     ax.grid()
+    ax.set_title("Mid-COVID, no Views (Altogether)")
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     for feature_data in numeric_features_without_views:
         feature = feature_data.id
@@ -270,7 +279,7 @@ def line_3():
 
         ax.set_xlabel("Date")
         ax.set_ylabel(feature_data.display_name)
-        # ax.yaxis.set_major_formatter(abbrev_num)
+        ax.yaxis.set_major_formatter(abbrev_num)
 
         ax.plot(
             tuple(zip(*groups_pairs))[0],
@@ -284,9 +293,10 @@ def line_3():
     ax = plt.subplot()
 
     ax.grid()
+    ax.set_title("Post-COVID (Altogether)")
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     for feature_data in numeric_features:
         feature = feature_data.id
@@ -314,9 +324,10 @@ def line_3():
     ax = plt.subplot()
 
     ax.grid()
+    ax.set_title("Post-COVID, no Views (Altogether)")
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     for feature_data in numeric_features_without_views:
         feature = feature_data.id
@@ -346,8 +357,14 @@ def line_4():
     ...
 
 
+# all categories:
 def bar_1():
-    raise NotImplementedError
+    grid = sns.catplot(
+        data=df_youtube, kind="bar", x="category_name", y="", alpha=0.6, height=6
+    )
+    grid.despine(left=True)
+    grid.set_axis_labels("", "Body mass (g)")
+    grid.legend.set_title("")
 
 
 def count_1():
@@ -366,6 +383,75 @@ def count_1():
     ax = sns.barplot(x=tuple(groups.index), y=tuple(groups.values))
     ax.bar_label(ax.containers[0], fontsize=10)
 
+    ax.set_title("Video Count by Category")
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Count")
+
+    ax.tick_params(axis="x", labelrotation=90)
+
+    plt.tight_layout()
+    plt.show()
+
+
+def count_2():
+    # (1) numeric feature subplots, grouped by category [name]:
+    groups = (
+        df_youtube[
+            (df_youtube["trending_date"].dt.date >= covid_min_date)
+            & (df_youtube["trending_date"].dt.date < covid_max_date)
+        ][["category_name"]]
+        .groupby("category_name")
+        .size()
+    )
+
+    # ax = plt.subplot()
+
+    # ax.set_xlabel("Category")
+    # ax.set_ylabel("Video Count")
+    # ax.tick_params(axis="x", labelrotation=90)
+
+    # bar_container = (tuple(groups.index), tuple(groups.values))
+    # ax.bar_label(bar_container)
+
+    ax = sns.barplot(x=tuple(groups.index), y=tuple(groups.values))
+    ax.bar_label(ax.containers[0], fontsize=10)
+
+    ax.set_title("Video Count by Category (Mid-COVID)")
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Count")
+
+    ax.tick_params(axis="x", labelrotation=90)
+
+    plt.tight_layout()
+    plt.show()
+
+
+def count_3():
+    # (1) numeric feature subplots, grouped by category [name]:
+    groups = (
+        df_youtube[df_youtube["trending_date"].dt.date >= covid_max_date][
+            ["category_name"]
+        ]
+        .groupby("category_name")
+        .size()
+    )
+
+    # ax = plt.subplot()
+
+    # ax.set_xlabel("Category")
+    # ax.set_ylabel("Video Count")
+    # ax.tick_params(axis="x", labelrotation=90)
+
+    # bar_container = (tuple(groups.index), tuple(groups.values))
+    # ax.bar_label(bar_container)
+
+    ax = sns.barplot(x=tuple(groups.index), y=tuple(groups.values))
+    ax.bar_label(ax.containers[0], fontsize=10)
+
+    ax.set_title("Video Count by Category (Post-COVID)")
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Count")
+
     ax.tick_params(axis="x", labelrotation=90)
 
     plt.tight_layout()
@@ -381,11 +467,70 @@ def pie_1():
         df_trim = df_youtube[df_youtube[feature] != 0]
 
         groups = df_trim.groupby("category_name")
-        groups_pairs = list(
-            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+
+        groups_top_n = sorted(groups_pairs, key=lambda pair: pair[1])[-5:]
+
+        if len(groups_pairs) == 0:
+            ax.set_visible(False)
+            continue
+
+        ax.set_title(feature_data.display_name)
+        ax.pie(
+            tuple(zip(*groups_top_n))[1],
+            labels=tuple(zip(*groups_top_n))[0],
+            autopct="%.2f%%",
         )
 
-        groups_top_n = sorted(groups_pairs, key=lambda pair: pair[1])[:5]
+    plt.show()
+
+
+def pie_2():
+    # (2) pre-COVID
+    df = df_youtube[
+        (df_youtube["trending_date"].dt.date >= covid_min_date)
+        & (df_youtube["trending_date"].dt.date < covid_max_date)
+    ]
+
+    f, _ = plt.subplots(2, 2)
+
+    for ax, feature_data in zip(f.axes, numeric_features):
+        feature = feature_data.id
+        df_trim = df[df[feature] != 0]
+
+        groups = df_trim.groupby("category_name")
+        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+
+        groups_top_n = sorted(groups_pairs, key=lambda pair: pair[1])[-5:]
+
+        if len(groups_pairs) == 0:
+            ax.set_visible(False)
+            continue
+
+        ax.set_title(feature_data.display_name)
+        ax.pie(
+            tuple(zip(*groups_top_n))[1],
+            labels=tuple(zip(*groups_top_n))[0],
+            autopct="%.2f%%",
+        )
+
+    plt.show()
+
+
+def pie_3():
+    # (3) post-COVID
+    df = df_youtube[df_youtube["trending_date"].dt.date >= covid_max_date]
+
+    f, _ = plt.subplots(2, 2)
+
+    for ax, feature_data in zip(f.axes, numeric_features):
+        feature = feature_data.id
+        df_trim = df[df[feature] != 0]
+
+        groups = df_trim.groupby("category_name")
+        groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].sum()), groups))
+
+        groups_top_n = sorted(groups_pairs, key=lambda pair: pair[1])[-5:]
 
         if len(groups_pairs) == 0:
             ax.set_visible(False)
@@ -403,29 +548,39 @@ def pie_1():
 
 def dist_with_feature(feature_name: str):
     # outlier removal:
-    sns.displot(trim_feature_outliers(df_youtube, feature_name), x=feature_name)
-    plt.show()
+    return sns.displot(trim_feature_outliers(df_youtube, feature_name), x=feature_name)
 
 
 def dist_1():
     # (1) dist plot w/ outlier removal, plotting view_count:
-    dist_with_feature("view_count")
+    ax = dist_with_feature("view_count")
+    ax.set_xlabels("Views")
+
+    plt.show()
 
 
 def dist_2():
     # (2) dist plot w/ outlier removal, plotting likes:
-    dist_with_feature("likes")
+    ax = dist_with_feature("likes")
+    ax.set_xlabels("Likes")
+
+    plt.show()
 
 
 def dist_3():
     # (3) dist plot w/ outlier removal, plotting dislikes:
-    sns.displot(df_dislike_trim, x="dislikes")
+    ax = sns.displot(df_dislike_trim, x="dislikes")
+    ax.set_xlabels("Dislikes")
+
     plt.show()
 
 
 def dist_4():
     # (4) dist plot w/ outlier removal, plotting comment_count:
-    dist_with_feature("comment_count")
+    ax = dist_with_feature("comment_count")
+    ax.set_xlabels("Comments")
+
+    plt.show()
 
 
 def pair_1():
@@ -480,6 +635,7 @@ def hist_kde_with_feature(feature_name: str):
 def hist_kde_1():
     # (1) hist with KDE for view_count
     ax = hist_kde_with_feature("view_count")
+    ax.set_title("Views w/ KDE")
     ax.set_xlabel("Views")
 
     plt.show()
@@ -488,6 +644,7 @@ def hist_kde_1():
 def hist_kde_2():
     # (2) hist with KDE for likes
     ax = hist_kde_with_feature("likes")
+    ax.set_title("Likes w/ KDE")
     ax.set_xlabel("Likes")
 
     plt.show()
@@ -496,6 +653,7 @@ def hist_kde_2():
 def hist_kde_3():
     # (3) hist with KDE for dislikes
     ax = sns.histplot(df_dislike_trim, x="dislikes", kde=True)
+    ax.set_title("Dislikes (trim) w/ KDE")
     ax.set_xlabel("Dislikes")
 
     plt.show()
@@ -503,14 +661,35 @@ def hist_kde_3():
 
 def hist_kde_4():
     # (3) hist with KDE for comment_count
-    ax = hist_kde_with_feature("likes")
-    ax.set_xlabel("Likes")
+    ax = hist_kde_with_feature("comment_count")
+    ax.set_title("Comment Count w/ KDE")
+    ax.set_xlabel("Comments")
 
     plt.show()
 
 
 def qq_1():
-    raise NotImplementedError
+    qqplot(df_youtube["view_count"])
+    plt.title("QQ: Views")
+    plt.show()
+
+
+def qq_2():
+    qqplot(df_youtube["likes"])
+    plt.title("QQ: Likes")
+    plt.show()
+
+
+def qq_3():
+    qqplot(df_dislike_trim["dislikes"])
+    plt.title("QQ: Dislikes")
+    plt.show()
+
+
+def qq_4():
+    qqplot(df_youtube["comment_count"])
+    plt.title("QQ: Comments")
+    plt.show()
 
 
 def kde_with_feature(feature_name: str):
@@ -526,7 +705,9 @@ def kde_with_feature(feature_name: str):
 def kde_1():
     # (1) KDE for view_count
     ax = kde_with_feature("view_count")
+    ax.set_title("KDE w/ Views")
     ax.set_xlabel("Views")
+    ax.xaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -534,7 +715,9 @@ def kde_1():
 def kde_2():
     # (2) KDE for likes
     ax = kde_with_feature("likes")
+    ax.set_title("KDE w/ Likes")
     ax.set_xlabel("Likes")
+    ax.xaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -548,7 +731,9 @@ def kde_3():
         fill=True,
         alpha=0.6,
     )
+    ax.set_title("KDE w/ Dislikes")
     ax.set_xlabel("Dislikes")
+    ax.xaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -556,7 +741,9 @@ def kde_3():
 def kde_4():
     # (4) KDE for comment_count
     ax = kde_with_feature("comment_count")
+    ax.set_title("KDE w/ Comments")
     ax.set_xlabel("Comments")
+    ax.xaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -575,8 +762,8 @@ def lm_1():
     ax.set_title("lmplot: Views vs. Likes")
     ax.set_xlabel("Views")
     ax.set_ylabel("Likes")
-    # ax.xaxis.set_major_formatter(abbrev_num)
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.xaxis.set_major_formatter(abbrev_num)
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -595,8 +782,8 @@ def lm_2():
     ax.set_title("lmplot: Comments vs. Likes")
     ax.set_xlabel("Likes")
     ax.set_ylabel("Comments")
-    # ax.xaxis.set_major_formatter(abbrev_num)
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.xaxis.set_major_formatter(abbrev_num)
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -612,11 +799,11 @@ def lm_3():
     )
     ax = grid.ax
 
-    ax.set_title("lmplot: Comments vs. Likes")
+    ax.set_title("lmplot: Comments vs. Dislikes")
     ax.set_xlabel("Dislikes")
     ax.set_ylabel("Comments")
-    # ax.xaxis.set_major_formatter(abbrev_num)
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.xaxis.set_major_formatter(abbrev_num)
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -647,6 +834,7 @@ def boxplot_1():
             ax=ax,
         )
 
+        ax.set_title(f"Box: Categories ({feature_data.display_name})")
         ax.set_xlabel(feature_data.display_name)
         ax.set_ylabel("Category")
 
@@ -723,6 +911,9 @@ def area_with_features(feature_set: list[SubplotFeature]):
     ax = plt.subplot()
 
     ax.grid()
+    ax.set_title(
+        f"Area w/ Features: {', '.join(map(lambda feature_data: feature_data.display_name, feature_set))}"
+    )
     ax.set_xlabel("Dates")
     ax.set_ylabel("Count")
 
@@ -734,7 +925,7 @@ def area_with_features(feature_set: list[SubplotFeature]):
         groups_pairs = list(
             map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
         )
-        # ax.yaxis.set_major_formatter(abbrev_num)
+        ax.yaxis.set_major_formatter(abbrev_num)
 
         x = tuple(zip(*groups_pairs))[0]
         y = tuple(zip(*groups_pairs))[1]
@@ -770,6 +961,7 @@ def violin_1():
         y="category_name",
     )
 
+    ax.set_title("Violin: Views vs. Category")
     ax.set_xlabel("Views")
     ax.set_ylabel("Category")
 
@@ -784,6 +976,7 @@ def violin_2():
         y="category_name",
     )
 
+    ax.set_title("Violin: Likes vs. Category")
     ax.set_xlabel("Likes")
     ax.set_ylabel("Category")
 
@@ -798,6 +991,7 @@ def violin_3():
         y="category_name",
     )
 
+    ax.set_title("Violin: Dislikes vs. Category")
     ax.set_xlabel("Dislikes")
     ax.set_ylabel("Category")
 
@@ -812,6 +1006,7 @@ def violin_4():
         y="category_name",
     )
 
+    ax.set_title("Violin: Comments vs. Category")
     ax.set_xlabel("Comments")
     ax.set_ylabel("Category")
 
@@ -850,8 +1045,11 @@ def rug_with_features(df: pd.DataFrame, feature_x: str, feature_y: str):
 def rug_1():
     ax = rug_with_features(df_youtube, "likes", "comment_count")
 
+    ax.set_title("Rug: Likes vs. Comments")
     ax.set_xlabel("Likes")
     ax.set_ylabel("Comments")
+    ax.xaxis.set_major_formatter(abbrev_num)
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -859,8 +1057,11 @@ def rug_1():
 def rug_2():
     ax = rug_with_features(df_dislike_trim, "dislikes", "comment_count")
 
+    ax.set_title("Rug: Dislikes vs. Comments")
     ax.set_xlabel("Dislikes")
     ax.set_ylabel("Comments")
+    ax.xaxis.set_major_formatter(abbrev_num)
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -868,8 +1069,11 @@ def rug_2():
 def rug_3():
     ax = rug_with_features(df_dislike_trim, "dislikes", "view_count")
 
+    ax.set_title("Rug: Dislikes vs. Views")
     ax.set_xlabel("Dislikes")
     ax.set_ylabel("Views")
+    ax.xaxis.set_major_formatter(abbrev_num)
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -931,6 +1135,7 @@ def hexbin_with_features(df: pd.DataFrame, feature_x: str, feature_y: str):
 def hexbin_1():
     ax = hexbin_with_features(df_youtube, "likes", "comment_count")
 
+    ax.set_title("Hexbin: Likes vs. Comments")
     ax.set_xlabel("Likes")
     ax.set_ylabel("Comments")
 
@@ -940,6 +1145,7 @@ def hexbin_1():
 def hexbin_2():
     ax = hexbin_with_features(df_youtube, "likes", "view_count")
 
+    ax.set_title("Hexbin: Likes vs. Views")
     ax.set_xlabel("Likes")
     ax.set_ylabel("Views")
 
@@ -949,6 +1155,7 @@ def hexbin_2():
 def hexbin_3():
     ax = hexbin_with_features(df_dislike_trim, "dislikes", "comment_count")
 
+    ax.set_title("Hexbin: Dislikes vs. Comments")
     ax.set_xlabel("Dislikes")
     ax.set_ylabel("Comments")
 
@@ -958,27 +1165,28 @@ def hexbin_3():
 def hexbin_4():
     ax = hexbin_with_features(df_dislike_trim, "dislikes", "view_count")
 
+    ax.set_title("Hexbin: Dislikes vs. Views")
     ax.set_xlabel("Dislikes")
     ax.set_ylabel("Views")
 
     plt.show()
 
 
-def strip_with_features(df: pd.DataFrame, feature_x: str, **kwargs):
+def strip_with_features(df: pd.DataFrame, feature_y: str, **kwargs):
     groups = df.groupby("category_name")
-    groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature_x].sum()), groups))
-    groups_top_n = sorted(groups_pairs, key=lambda pair: pair[1])[:5]
+    groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature_y].sum()), groups))
+    groups_top_n = sorted(groups_pairs, key=lambda pair: pair[1])[-5:]
 
     df_top_n = df[
         df["category_name"].isin(tuple(map(lambda pair: pair[0], groups_top_n)))
     ]
 
-    q_lo_y = df_top_n[feature_x].quantile(0.1)
-    q_hi_y = df_top_n[feature_x].quantile(0.9)
+    q_lo_y = df_top_n[feature_y].quantile(0.1)
+    q_hi_y = df_top_n[feature_y].quantile(0.9)
 
-    df_trim = df_top_n[(df_top_n[feature_x] < q_hi_y) & (df_top_n[feature_x] > q_lo_y)]
+    df_trim = df_top_n[(df_top_n[feature_y] < q_hi_y) & (df_top_n[feature_y] > q_lo_y)]
 
-    return sns.stripplot(df_trim, x=feature_x, y="category_name", **kwargs)
+    return sns.stripplot(df_trim, x="category_name", y=feature_y, size=2, **kwargs)
 
 
 def strip_1():
@@ -988,9 +1196,10 @@ def strip_1():
         hue="category_name",
     )
 
-    ax.set_xlabel("Likes")
-    ax.set_ylabel("Category")
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.set_title("Strip: Likes vs. Category")
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Likes")
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -1002,9 +1211,10 @@ def strip_2():
         hue="category_name",
     )
 
-    ax.set_xlabel("Views")
-    ax.set_ylabel("Category")
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.set_title("Strip: Views vs. Category")
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Views")
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -1016,28 +1226,29 @@ def strip_3():
         hue="category_name",
     )
 
-    ax.set_xlabel("Dislikes")
-    ax.set_ylabel("Category")
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.set_title("Strip: Dislikes vs. Category")
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Dislikes")
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
 
-def swarm_with_features(df: pd.DataFrame, feature_x: str, **kwargs):
+def swarm_with_features(df: pd.DataFrame, feature_y: str, **kwargs):
     groups = df.groupby("category_name")
-    groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature_x].sum()), groups))
+    groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature_y].sum()), groups))
     groups_top_n = sorted(groups_pairs, key=lambda pair: pair[1])[:5]
 
     df_top_n = df[
         df["category_name"].isin(tuple(map(lambda pair: pair[0], groups_top_n)))
     ]
 
-    q_lo_y = df_top_n[feature_x].quantile(0.25)
-    q_hi_y = df_top_n[feature_x].quantile(0.75)
+    q_lo_y = df_top_n[feature_y].quantile(0.25)
+    q_hi_y = df_top_n[feature_y].quantile(0.75)
 
-    df_trim = df_top_n[(df_top_n[feature_x] < q_hi_y) & (df_top_n[feature_x] > q_lo_y)]
+    df_trim = df_top_n[(df_top_n[feature_y] < q_hi_y) & (df_top_n[feature_y] > q_lo_y)]
 
-    return sns.swarmplot(df_trim, x=feature_x, y="category_name", **kwargs)
+    return sns.swarmplot(df_trim, x="category_name", y=feature_y, size=2, **kwargs)
 
 
 def swarm_1():
@@ -1047,11 +1258,13 @@ def swarm_1():
         hue="category_name",
     )
 
-    ax.set_xlabel("Likes")
-    ax.set_ylabel("Category")
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.set_title("Swarm: Likes vs. Category")
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Likes")
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
+
 
 def swarm_2():
     ax = swarm_with_features(
@@ -1060,9 +1273,10 @@ def swarm_2():
         hue="category_name",
     )
 
-    ax.set_xlabel("Views")
-    ax.set_ylabel("Category")
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.set_title("Swarm: Views vs. Category")
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Views")
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -1074,9 +1288,10 @@ def swarm_3():
         hue="category_name",
     )
 
-    ax.set_xlabel("Dislikes")
-    ax.set_ylabel("Category")
-    # ax.yaxis.set_major_formatter(abbrev_num)
+    ax.set_title("Swarm: Dislikes vs. Category")
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Dislikes")
+    ax.yaxis.set_major_formatter(abbrev_num)
 
     plt.show()
 
@@ -1090,13 +1305,19 @@ if __name__ == "__main__":
 
     # bar: TODO
     # bar_1() # grouped
-    # bar_2() # stacked
+    # bar_2() # grouped
+    # bar_3() # stacked
+    # bar_4() # stacked
 
     # count:
     # count_1()
+    # count_2()
+    # count_3()
 
     # pie:
     # pie_1()
+    # pie_2()
+    # pie_3()
 
     # dist:
     # dist_1()
@@ -1116,8 +1337,11 @@ if __name__ == "__main__":
     # hist_kde_3()
     # hist_kde_4()
 
-    # qq: TODO
+    # qq:
     # qq_1()
+    # qq_2()
+    # qq_3()
+    # qq_4()
 
     # KDE:
     # kde_1()
@@ -1168,13 +1392,13 @@ if __name__ == "__main__":
     # hexbin_4()
 
     # strip:
-    # strip_1()
-    # strip_2()
-    # strip_3()
+    strip_1()
+    strip_2()
+    strip_3()
 
     # swarm:
-    # swarm_1()
-    # swarm_2()
-    # swarm_3()
+    swarm_1()
+    swarm_2()
+    swarm_3()
 
     ...
