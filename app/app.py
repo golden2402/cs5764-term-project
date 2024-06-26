@@ -7,9 +7,8 @@ from datetime import date
 
 import pandas as pd
 
-from plotly import express as px
+# from plotly import express as px
 from plotly import graph_objects as go
-from plotly.subplots import make_subplots
 
 from dash import Dash
 from dash import dcc, html, callback, Input, Output, State
@@ -87,7 +86,7 @@ def abbrev_num(value: int | float):
     n_thousands = 0 if abs(value) < 1000 else floor(log10(abs(value)) / 3)
     value = round(value / 1000**n_thousands, 2)
 
-    return f"{value:g}" + " KMBT"[n_thousands]
+    return (f"{value:g}" + " KMBT"[n_thousands]).strip()
 
 
 class Tab(NamedTuple):
@@ -99,7 +98,8 @@ TABS = (
     Tab("Chronology", "t1"),
     Tab("Categories (Bar)", "t2"),
     Tab("Categories (Pie)", "t3"),
-    Tab("Downloads", "t4"),
+    Tab("Counts", "t4"),
+    Tab("Downloads", "t5"),
 )
 
 
@@ -219,6 +219,48 @@ def update_tab(value: str | None):
             ),
         )
     elif value == TABS[3].value:
+        return (
+            html.Section((html.H2("Counts"), html.P(""))),
+            dcc.Loading((html.Div(id="t4-graph-container")), type="default"),
+            html.Section(
+                (
+                    html.H4("Feature Selection:", className="label"),
+                    dcc.Dropdown(
+                        id="t4-feature-dropdown",
+                        options=NUMERIC_FEATURES,
+                        value=next(iter(NUMERIC_FEATURES)),
+                    ),
+                    html.Section(
+                        (
+                            html.H4("Feature Minimum Threshold:", className="label"),
+                            dcc.Slider(
+                                id="t4-feature-threshold",
+                                min=0,
+                                max=100,
+                                value=0,
+                                step=1,
+                                marks={i: str(i) for i in range(0, 101, 5)},
+                                tooltip={
+                                    "always_visible": True,
+                                    "template": "{value}%",
+                                },
+                            ),
+                        )
+                    ),
+                )
+            ),
+            html.Section(
+                (
+                    html.H4("Tags:", className="label"),
+                    dcc.Textarea(
+                        id="t4-tags",
+                        placeholder="Search for tags. Search for multiple by delimiting by comma (,), e.g.: dog, cat,bird",
+                        style={"width": "60%", "minHeight": 120, "resize": "vertical"},
+                    ),
+                )
+            ),
+        )
+    elif value == TABS[4].value:
         # may need to shift for extra tabs?
         return (
             html.Section((html.H2("Downloads"), html.P(""))),
@@ -231,7 +273,7 @@ def update_tab(value: str | None):
                                 (
                                     html.H4("Dislike Filtering", className="label"),
                                     dcc.Checklist(
-                                        id="t4-download-checklist",
+                                        id="t5-download-checklist",
                                         options={
                                             "remove_dislikes": "Rows with Dislikes Only"
                                         },
@@ -242,7 +284,7 @@ def update_tab(value: str | None):
                                 (
                                     html.H4("COVID Trimming", className="label"),
                                     dcc.RadioItems(
-                                        id="t4-download-radio",
+                                        id="t5-download-radio",
                                         options=DOWNLOAD_MAP_LABELS,
                                         value=next(iter(DOWNLOAD_MAP_LABELS)),
                                     ),
@@ -254,13 +296,13 @@ def update_tab(value: str | None):
                     html.Section(
                         (
                             html.H3("Finalize", className="label"),
-                            html.Button("Clean & Download", id="t4-download-button"),
+                            html.Button("Clean & Download", id="t5-download-button"),
                         )
                     ),
                 ),
             ),
-            dcc.Store(id="t4-download-store"),
-            dcc.Download(id="t4-download-output"),
+            dcc.Store(id="t5-download-store"),
+            dcc.Download(id="t5-download-output"),
         )
 
     return None
@@ -288,7 +330,7 @@ def update_t1_line(
             df = df[df["dislikes"] != 0]
         # TODO: other filters--does order matter?
 
-    figure = go.Figure(layout=dict(showlegend=True, hovermode="x"))
+    figure = go.Figure(layout={"showlegend": True, "hovermode": "x"})
     figure.update_xaxes(
         showspikes=True,
         spikemode="across",
@@ -436,22 +478,76 @@ def update_t3_bar(feature: str | None, range_min_max: list[int] | None):
     return dcc.Graph(figure=figure), 1, len(groups)
 
 
+# tab 4:
 @callback(
-    Output("t4-download-store", "data"),
-    (Input("t4-download-checklist", "value"), Input("t4-download-radio", "value")),
+    Output("t4-graph-container", "children"),
+    (
+        Input("t4-feature-dropdown", "value"),
+        Input("t4-feature-threshold", "value"),
+        Input("t4-tags", "value"),
+    ),
 )
-def t4_set_params(value_checklist: list, value_radio: list):
+def update_t4_bar(
+    feature: str | None, threshold_percentage: int | float | None, tags: str | None
+):
+    if feature is None:
+        return html.P("Please select a feature!")
+
+    sample_lower = df_youtube[feature].min()
+    sample_upper = df_youtube[feature].max()
+
+    threshold_allowance = sample_lower + (sample_upper - sample_lower) * (
+        threshold_percentage / 100
+    )
+
+    df: pd.DataFrame = df_youtube[df_youtube[feature] >= threshold_allowance]
+
+    if tags is not None:
+        query_string = "|".join([string.replace(" ", "") for string in tags.split(",")])
+        df = df[df["tags"].str.contains(query_string)]
+
+    groups = df.groupby("category_name")
+    groups_pairs = list(map(lambda pair: (pair[0], pair[1][feature].count()), groups))
+    sorted_pairs = sorted(groups_pairs, key=lambda pair: pair[1])
+
+    groups_zip = tuple(zip(*sorted_pairs))
+
+    # figure:
+    feature_label = NUMERIC_FEATURES[feature]
+
+    figure = go.Figure(
+        go.Bar(
+            x=groups_zip[0],
+            y=groups_zip[1],
+            text=tuple(map(abbrev_num, groups_zip[1])),
+            hovertemplate="<b>%{x}</b>" + "<br>%{y:,} Videos" + "<extra></extra>",
+        )
+    )
+    figure.update_layout(
+        title=f"Count (Categories): {abbrev_num(int(threshold_allowance))}+ {feature_label}",
+        xaxis_title="Category",
+        yaxis_title=feature_label,
+    )
+
+    return dcc.Graph(figure=figure), 1, len(groups)
+
+
+# tab 5: cleaning & download
+@callback(
+    Output("t5-download-store", "data"),
+    (Input("t5-download-checklist", "value"), Input("t5-download-radio", "value")),
+)
+def t5_set_params(value_checklist: list, value_radio: list):
     return {"options": value_checklist, "data_range": value_radio}
 
 
-# tab 4: cleaning & download
 @callback(
-    Output("t4-download-output", "data"),
-    Input("t4-download-button", "n_clicks"),
-    State("t4-download-store", "data"),
+    Output("t5-download-output", "data"),
+    Input("t5-download-button", "n_clicks"),
+    State("t5-download-store", "data"),
     prevent_initial_call=True,
 )
-def t4_download(_: int, data: dict):
+def t5_download(_: int, data: dict):
     options: list[str] = data["options"] or []
     df: pd.DataFrame = DOWNLOAD_MAP.get(
         data["data_range"], next(iter(DOWNLOAD_MAP.values()))
