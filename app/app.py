@@ -18,16 +18,15 @@ from dash import dcc, html, callback, Input, Output, State
 data_path = os.path.join("..", "app", "data")
 
 # data loading & cleaning:
-df_youtube = pd.read_csv(os.path.join(data_path, "US_youtube_trending_data.csv"))
+DF_CATEGORY_MAP = {
+    int(item["id"]): item["snippet"]["title"]
+    for item in json.load(open(os.path.join(data_path, "US_category_id.json"), "r"))[
+        "items"
+    ]
+}
 
-df_youtube["category_name"] = df_youtube["category_id"].replace(
-    {
-        int(item["id"]): item["snippet"]["title"]
-        for item in json.load(
-            open(os.path.join(data_path, "US_category_id.json"), "r")
-        )["items"]
-    }
-)
+df_youtube = pd.read_csv(os.path.join(data_path, "US_youtube_trending_data.csv"))
+df_youtube["category_name"] = df_youtube["category_id"].replace(DF_CATEGORY_MAP)
 
 for column in ("published_at", "trending_date"):
     df_youtube[column] = pd.to_datetime(df_youtube[column]).dt.tz_localize(None)
@@ -123,7 +122,44 @@ server = app.server
 @callback(Output("tab-content", "children"), Input("tabs", "value"))
 def update_tab(value: str | None):
     if value == TABS[0].value:
-        return (html.H2("Chronology"), dcc.Loading((html.Div("t1-graph-container"))))
+        return (
+            html.Section((html.H2("Chronology"), html.P(""))),
+            dcc.Loading((html.Div(id="t1-graph-container")), type="default"),
+            html.Section(
+                (
+                    html.H3("Graph Refinements", className="label"),
+                    html.Section(
+                        (
+                            html.H4("Category", className="label"),
+                            dcc.Dropdown(
+                                id="t1-filter-category",
+                                options=DF_CATEGORY_MAP,
+                                value=next(iter(DF_CATEGORY_MAP)),
+                            ),
+                        )
+                    ),
+                    html.Section(
+                        (
+                            html.H4("Filters", className="label"),
+                            dcc.Checklist(
+                                id="t1-filter-checklist",
+                                options={"remove_dislikes": "Rows with Dislikes Only"},
+                            ),
+                        )
+                    ),
+                    html.Section(
+                        (
+                            html.H4("COVID Trimming", className="label"),
+                            dcc.RadioItems(
+                                id="t1-filter-radio",
+                                options=DOWNLOAD_MAP_LABELS,
+                                value=next(iter(DOWNLOAD_MAP_LABELS)),
+                            ),
+                        )
+                    ),
+                ),
+            ),
+        )
     elif value == TABS[1].value:
         return (
             html.Section((html.H2("Categories (Bar)"), html.P(""))),
@@ -230,6 +266,83 @@ def update_tab(value: str | None):
     return None
 
 
+# tab 1: Chronology
+@callback(
+    Output("t1-graph-container", "children"),
+    (
+        Input("t1-filter-category", "value"),
+        Input("t1-filter-checklist", "value"),
+        Input("t1-filter-radio", "value"),
+    ),
+)
+def update_t1_line(
+    category_id: str | None, filters: list[str] | None, data_range: str | None
+):
+    df: pd.DataFrame = DOWNLOAD_MAP.get(data_range, next(iter(DOWNLOAD_MAP.values())))
+
+    if category_id:
+        df = df[df["category_id"] == int(category_id)]
+
+    if len(filters or []) > 0:
+        if "remove_dislikes" in filters:
+            df = df[df["dislikes"] != 0]
+        # TODO: other filters--does order matter?
+
+    figure = go.Figure(layout=dict(showlegend=True, hovermode="x"))
+    figure.update_xaxes(
+        showspikes=True,
+        spikemode="across",
+        spikesnap="cursor",
+        spikecolor="#d3d3d3",
+        showline=True,
+        showgrid=True,
+    )
+
+    for feature, feature_label in NUMERIC_FEATURES.items():
+        df_isolated = df[df[feature] != 0]
+
+        groups = df_isolated.groupby([df_isolated["trending_date"].dt.date])
+        groups_pairs = list(
+            map(lambda pair: (pair[0][0], pair[1][feature].sum()), groups)
+        )
+        groups_zip = tuple(zip(*groups_pairs))
+
+        # bad results?:
+        if len(groups_zip) == 0:
+            continue
+
+        figure.add_trace(
+            go.Scatter(
+                x=groups_zip[0],
+                y=groups_zip[1],
+                mode="lines",
+                name=feature_label,
+                hovertemplate="<b>%{x}</b>"
+                + "<br>%{customdata} "
+                + feature_label
+                + "<extra></extra>",
+                customdata=tuple(map(abbrev_num, groups_zip[1])),
+            )
+        )
+
+    if len(figure.data) == 0:
+        return html.Div(
+            (
+                html.H1(
+                    "No data matches your particular filter set!",
+                    style={"marginBottom": 0},
+                ),
+                html.P(
+                    "Note: Dislikes were removed in November 2021, so they cannot show up post-COVID.",
+                    style={"marginTop": 0},
+                ),
+            ),
+            className="download-parameters",
+        )
+
+    return dcc.Graph(figure=figure)
+
+
 # tab 2: Categories (Bar)
 @callback(
     (
@@ -328,8 +441,6 @@ def update_t3_bar(feature: str | None, range_min_max: list[int] | None):
     (Input("t4-download-checklist", "value"), Input("t4-download-radio", "value")),
 )
 def t4_set_params(value_checklist: list, value_radio: list):
-    print(value_checklist, value_radio)
-
     return {"options": value_checklist, "data_range": value_radio}
 
 
